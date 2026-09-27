@@ -1,25 +1,31 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react'
+import React, { useState } from "react";
 
-import { useSignUp } from '@clerk/nextjs/legacy'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff } from "lucide-react"
+import { useSignUp } from "@clerk/nextjs/legacy";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff } from "lucide-react";
 
 function SignUp() {
   const { signUp, isLoaded, setActive } = useSignUp();
-  const [ emailAddress, setEmailAddress ] = useState("");
-  const [ password, setPassword ] = useState("");
-  const [ pendingVerification, setPendingVerification ] = useState(false);
-  const [ code, setCode ] = useState("");
-  const [ error, setError ] = useState("");
-  const [ showPassword, setShowPassword ] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
   if (!isLoaded) {
@@ -27,49 +33,59 @@ function SignUp() {
   }
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!isLoaded) {
       return;
     }
-    setError("")
+    setError("");
 
     try {
       await signUp.create({
         emailAddress,
-        password
-      })
+        password,
+      });
 
       await signUp.prepareEmailAddressVerification({
-        strategy: "email_code"
+        strategy: "email_code",
       });
-      setPendingVerification(true)
+      setPendingVerification(true);
     } catch (error: any) {
       console.log(JSON.stringify(error, null, 2));
-      setError(error.errors?.[0]?.message || error.message || "An error occurred during sign up")
+      setError(
+        error.errors?.[0]?.message ||
+          error.message ||
+          "An error occurred during sign up",
+      );
     }
   }
 
   async function onPressVerify(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!isLoaded) {
-      return
+      return;
     }
-    setError("")
+    setError("");
 
     try {
-      const completeSignUp = await signUp.attemptEmailAddressVerification({ code })
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
+      });
 
       if (completeSignUp.status !== "complete") {
-        console.log(JSON.stringify(completeSignUp, null, 2))
+        console.log(JSON.stringify(completeSignUp, null, 2));
       }
 
       if (completeSignUp.status === "complete") {
-        await setActive({ session: completeSignUp.createdSessionId })
-        router.push("/")
+        await setActive({ session: completeSignUp.createdSessionId });
+        router.push("/");
       }
     } catch (err: any) {
       console.log(JSON.stringify(err, null, 2));
-      setError(err.errors?.[0]?.message || err.message || "An error occurred during verification")
+      setError(
+        err.errors?.[0]?.message ||
+          err.message ||
+          "An error occurred during verification",
+      );
     }
   }
 
@@ -89,7 +105,8 @@ function SignUp() {
               Master Your Tasks Daily
             </h3>
             <p className="mt-1 text-xs sm:text-sm text-stone-500">
-              Stay organized, focused, and productive with your personal task planner.
+              Stay organized, focused, and productive with your personal task
+              planner.
             </p>
           </div>
         </div>
@@ -110,7 +127,10 @@ function SignUp() {
             {!pendingVerification ? (
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-stone-700">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-medium text-stone-700"
+                  >
                     Email address
                   </Label>
                   <Input
@@ -125,7 +145,10 @@ function SignUp() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-stone-700">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-stone-700"
+                  >
                     Password
                   </Label>
                   <div className="relative">
@@ -142,7 +165,9 @@ function SignUp() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 focus:outline-none cursor-pointer"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -155,9 +180,13 @@ function SignUp() {
 
                 {error && (
                   <Alert variant="destructive" className="py-2.5">
-                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                    <AlertDescription className="text-xs">
+                      {error}
+                    </AlertDescription>
                   </Alert>
                 )}
+
+                <div id="clerk-captcha" />
 
                 <Button
                   type="submit"
@@ -169,7 +198,10 @@ function SignUp() {
             ) : (
               <form onSubmit={onPressVerify} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code" className="text-sm font-medium text-stone-700">
+                  <Label
+                    htmlFor="code"
+                    className="text-sm font-medium text-stone-700"
+                  >
                     Verification Code
                   </Label>
                   <Input
@@ -184,7 +216,9 @@ function SignUp() {
 
                 {error && (
                   <Alert variant="destructive" className="py-2.5">
-                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                    <AlertDescription className="text-xs">
+                      {error}
+                    </AlertDescription>
                   </Alert>
                 )}
 
@@ -212,7 +246,7 @@ function SignUp() {
         </div>
       </Card>
     </div>
-  )
+  );
 }
 
-export default SignUp
+export default SignUp;
