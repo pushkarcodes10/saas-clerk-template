@@ -1,0 +1,218 @@
+"use client"
+
+import React, { useState } from 'react'
+
+import { useSignUp } from '@clerk/nextjs/legacy'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Eye, EyeOff } from "lucide-react"
+
+function SignUp() {
+  const { signUp, isLoaded, setActive } = useSignUp();
+  const [ emailAddress, setEmailAddress ] = useState("");
+  const [ password, setPassword ] = useState("");
+  const [ pendingVerification, setPendingVerification ] = useState(false);
+  const [ code, setCode ] = useState("");
+  const [ error, setError ] = useState("");
+  const [ showPassword, setShowPassword ] = useState(false);
+
+  const router = useRouter();
+  if (!isLoaded) {
+    return null;
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isLoaded) {
+      return;
+    }
+    setError("")
+
+    try {
+      await signUp.create({
+        emailAddress,
+        password
+      })
+
+      await signUp.prepareEmailAddressVerification({
+        strategy: "email_code"
+      });
+      setPendingVerification(true)
+    } catch (error: any) {
+      console.log(JSON.stringify(error, null, 2));
+      setError(error.errors?.[0]?.message || error.message || "An error occurred during sign up")
+    }
+  }
+
+  async function onPressVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isLoaded) {
+      return
+    }
+    setError("")
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code })
+
+      if (completeSignUp.status !== "complete") {
+        console.log(JSON.stringify(completeSignUp, null, 2))
+      }
+
+      if (completeSignUp.status === "complete") {
+        await setActive({ session: completeSignUp.createdSessionId })
+        router.push("/")
+      }
+    } catch (err: any) {
+      console.log(JSON.stringify(err, null, 2));
+      setError(err.errors?.[0]?.message || err.message || "An error occurred during verification")
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#FFE7DF] p-4 sm:p-6 lg:p-8">
+      <Card className="w-full max-w-4xl overflow-hidden rounded-3xl border border-[#FADCD1] bg-white p-0 shadow-xl flex flex-col md:flex-row">
+        <div className="relative flex flex-col items-center justify-center bg-[#FFF5F1] p-6 sm:p-8 md:w-1/2 md:p-10 border-b md:border-b-0 md:border-r border-[#FADCD1]">
+          <div className="flex w-full max-w-xs flex-col items-center text-center">
+            <div className="overflow-hidden rounded-2xl border border-[#F6D0C3] bg-white p-2 shadow-sm">
+              <img
+                src="/login.jpg"
+                alt="Todo Master"
+                className="h-auto max-h-[340px] w-full rounded-xl object-cover"
+              />
+            </div>
+            <h3 className="mt-5 text-lg font-semibold text-stone-800">
+              Master Your Tasks Daily
+            </h3>
+            <p className="mt-1 text-xs sm:text-sm text-stone-500">
+              Stay organized, focused, and productive with your personal task planner.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-center p-6 sm:p-8 md:w-1/2 md:p-10">
+          <CardHeader className="space-y-1 p-0 pb-6">
+            <CardTitle className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+              Sign Up for Todo Master
+            </CardTitle>
+            <CardDescription className="text-sm text-stone-500">
+              {pendingVerification
+                ? "Enter the 6-digit confirmation code sent to your email"
+                : "Create your account to start organizing your life"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {!pendingVerification ? (
+              <form onSubmit={submit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-stone-700">
+                    Email address
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    placeholder="you@example.com"
+                    value={emailAddress}
+                    onChange={(e) => setEmailAddress(e.target.value)}
+                    className="h-10 border-stone-200 bg-stone-50/50 transition-colors focus:bg-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-stone-700">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      placeholder="Enter a secure password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-10 pr-10 border-stone-200 bg-stone-50/50 transition-colors focus:bg-white"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 focus:outline-none cursor-pointer"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="py-2.5">
+                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-10 font-semibold bg-[#FF6B4A] hover:bg-[#F25A38] text-white shadow-sm transition-colors cursor-pointer"
+                >
+                  Sign Up
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={onPressVerify} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="text-sm font-medium text-stone-700">
+                    Verification Code
+                  </Label>
+                  <Input
+                    id="code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="Enter verification code"
+                    className="h-10 text-center tracking-widest text-lg font-mono border-stone-200 bg-stone-50/50 focus:bg-white"
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="py-2.5">
+                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-10 font-semibold bg-[#FF6B4A] hover:bg-[#F25A38] text-white shadow-sm transition-colors cursor-pointer"
+                >
+                  Verify Email
+                </Button>
+              </form>
+            )}
+          </CardContent>
+
+          <div className="pt-6 text-center">
+            <p className="text-sm text-stone-500">
+              Already have an account?{" "}
+              <Link
+                href="/sign-in"
+                className="font-semibold text-[#FF6B4A] hover:text-[#E25536] hover:underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default SignUp
