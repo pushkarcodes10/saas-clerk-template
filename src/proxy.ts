@@ -30,7 +30,7 @@ const handler = clerkMiddleware(async (auth, req) => {
     return;
   }
 
-  if (pathname.startsWith("/api/webhook/register")) {
+  if (pathname.startsWith("/api/webhook")) {
     return;
   }
 
