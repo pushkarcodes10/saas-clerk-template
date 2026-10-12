@@ -32,11 +32,17 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.todo.delete({
-      where: { id: todoId },
-    })
+    const body = await req.json();
+    const isCompleted = body.isCompleted !== undefined ? body.isCompleted : body.completed;
 
-    return NextResponse.json({ message: "Todo deleted successfully" }, { status: 200 });
+    const updatedTodo = await prisma.todo.update({
+      where: { id: todoId },
+      data: {
+        isCompleted: isCompleted !== undefined ? Boolean(isCompleted) : undefined,
+      },
+    });
+
+    return NextResponse.json(updatedTodo, { status: 200 });
 
   } catch (err) {
     console.error("Error deleting todo:", err);
@@ -48,8 +54,8 @@ export async function PUT(
 }
 
 export async function DELETE(
-    req: NextRequest,
-  { params }: { params: { id: string } },
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { userId } = await auth();
 
@@ -58,7 +64,8 @@ export async function DELETE(
   }
 
   try {
-    const todoId = params.id;
+    const { id } = await params;
+    const todoId = Number(id);
 
     const todo = await prisma.todo.findUnique({
       where: { id: Number(todoId) },
