@@ -61,10 +61,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({error: "Unauthorised User"}, {status: 401})
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: {id: userId},
         include: {todos: true}
     })
+
+    if(!user) {
+        try {
+            const { clerkClient } = await import("@clerk/nextjs/server");
+            const client = await clerkClient();
+            const clerkUser = await client.users.getUser(userId);
+            const email = clerkUser.emailAddresses[0]?.emailAddress || `${userId}@example.com`;
+            const name = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null;
+
+            user = await prisma.user.upsert({
+                where: { id: userId },
+                update: { email, name },
+                create: {
+                    id: userId,
+                    email,
+                    name,
+                    isSubscribed: false,
+                },
+                include: { todos: true },
+            });
+        } catch (e) {
+            console.error("Failed to sync user in todos POST:", e);
+        }
+    }
 
     if(!user) {
         return NextResponse.json({error: "User not found"}, {status: 404})

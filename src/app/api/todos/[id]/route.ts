@@ -33,19 +33,29 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const isCompleted = body.isCompleted !== undefined ? body.isCompleted : body.completed;
+    const isCompleted =
+      body.isCompleted !== undefined ? body.isCompleted : body.completed;
+    const title = typeof body.title === "string" ? body.title.trim() : undefined;
+
+    if (title !== undefined && title.length === 0) {
+      return NextResponse.json(
+        { error: "Title cannot be empty" },
+        { status: 400 },
+      );
+    }
 
     const updatedTodo = await prisma.todo.update({
       where: { id: todoId },
       data: {
-        isCompleted: isCompleted !== undefined ? Boolean(isCompleted) : undefined,
+        isCompleted:
+          isCompleted !== undefined ? Boolean(isCompleted) : undefined,
+        title: title !== undefined ? title : undefined,
       },
     });
 
     return NextResponse.json(updatedTodo, { status: 200 });
-
   } catch (err) {
-    console.error("Error deleting todo:", err);
+    console.error("Error updating todo:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
